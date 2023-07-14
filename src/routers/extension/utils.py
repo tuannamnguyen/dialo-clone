@@ -21,3 +21,11 @@ async def create_extension(request_data: ExtensionSchema):
             "data": None,
             "message": "Extension already existed"
         }
+
+async def get_extensions():
+    data = [extension.dump() async for extension in ExtensionModel.find()]
+    return {
+        "success": True,
+        "data": data,
+        "message": "Get extensions successfully"
+    }
