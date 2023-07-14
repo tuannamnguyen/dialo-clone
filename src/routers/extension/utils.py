@@ -1,5 +1,5 @@
 from src.models.extension_model import ExtensionModel
-from src.schemas.extension_schema import ExtensionSchema
+from src.schemas.extension_schema import ExtensionSchema, ExtensionUpdateSchema
 from fastapi.encoders import jsonable_encoder
 from marshmallow.exceptions import ValidationError
 import logging
@@ -12,7 +12,7 @@ async def create_extension(request_data: ExtensionSchema):
         await ExtensionModel(**request_data).commit()
         return {
             "success": True,
-            "data": ExtensionModel(**request_data).dump(),
+            "data": request_data,
             "message": "Add new extension successfully"
         }
     except ValidationError as e:
@@ -41,6 +41,24 @@ async def delete_extension(extension_id: str):
             "success": True,
             "data": extension.dump(),
             "message": "Delete extension successfully"
+        }
+    return {
+        "success": False,
+        "data": None,
+        "message": "Can't find extension"
+    }
+
+
+async def update_extension(extension_id: str, update_data: ExtensionUpdateSchema):
+    extension = await ExtensionModel.find_one({"extension_id": extension_id})
+    if extension:
+        update_data = jsonable_encoder(update_data)
+        update_data = {k: v for k, v in update_data.items() if v is not None}
+        await ExtensionModel.collection.update_one({"extension_id": extension_id}, {"$set": update_data})
+        return {
+            "success": True,
+            "data": update_data,
+            "message": "Update extension successfully"
         }
     return {
         "success": False,
