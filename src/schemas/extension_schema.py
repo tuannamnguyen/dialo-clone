@@ -23,5 +23,7 @@ class ExtensionSchema(BaseModel):
 if __name__ == "__main__":
     try:
         print(ExtensionSchema(extension_id="1123", list_queue_id=[], agent="namnt134", status="Enable", description=None))
+        print(ExtensionSchema(extension_id="1123", list_queue_id=[], agent="namnt134", status="Enable", description=None).model_dump_json())
+
     except ValidationError as e:
         print(e)
