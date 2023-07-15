@@ -2,7 +2,7 @@ from src.models.extension_model import ExtensionModel
 from src.schemas.extension_schema import ExtensionSchema, ExtensionUpdateSchema
 from fastapi.encoders import jsonable_encoder
 from marshmallow.exceptions import ValidationError
-import logging
+from pymongo.errors import DuplicateKeyError
 
 
 async def create_extension(request_data: ExtensionSchema):
@@ -60,12 +60,20 @@ async def update_extension(extension_id: str, update_data: ExtensionUpdateSchema
     if extension:
         update_data = jsonable_encoder(update_data)
         update_data = {k: v for k, v in update_data.items() if v is not None}
-        await ExtensionModel.collection.update_one({"extension_id": extension_id}, {"$set": update_data})
-        return {
-            "success": True,
-            "data": update_data,
-            "message": "Update extension successfully"
-        }
+        try:
+            await ExtensionModel.collection.update_one({"extension_id": extension_id}, {"$set": update_data})
+            return {
+                "success": True,
+                "data": update_data,
+                "message": "Update extension successfully"
+            }
+        except DuplicateKeyError as e:
+            print(e)
+            return {
+                "success": False,
+                "data": None,
+                "message": "Duplicate agent or extension ID"
+            }
     return {
         "success": False,
         "data": None,
