@@ -24,9 +24,25 @@ async def create_extension(request_data: ExtensionSchema):
         }
 
 
-async def get_extensions():
-    data = [extension.dump() async for extension in ExtensionModel.find()]
-    if data: 
+async def get_extensions(queue: list[str], status: str):
+    data = []
+    if not queue and not status:
+        data = [extension.dump() async for extension in ExtensionModel.find()]
+    elif queue and not status:
+        data = [extension.dump() async for extension in ExtensionModel.find(
+            {"list_queue_id": {"$elemMatch": {"$in": queue}}}
+        )]
+    elif status and not queue:
+        data = [extension.dump() async for extension in ExtensionModel.find(
+            {"status": status}
+        )]
+    elif queue and status:
+        data = [extension.dump() async for extension in ExtensionModel.find(
+            {"$and": [{"list_queue_id": {"$elemMatch": {"$in": queue}}}, {
+                "status": status}]}
+        )]
+
+    if data:
         return {
             "success": True,
             "data": data,
