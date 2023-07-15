@@ -26,10 +26,16 @@ async def create_extension(request_data: ExtensionSchema):
 
 async def get_extensions():
     data = [extension.dump() async for extension in ExtensionModel.find()]
+    if data: 
+        return {
+            "success": True,
+            "data": data,
+            "message": "Get extensions successfully"
+        }
     return {
-        "success": True,
-        "data": data,
-        "message": "Get extensions successfully"
+        "success": False,
+        "data": None,
+        "message": "Can't find any extension"
     }
 
 
@@ -64,4 +70,19 @@ async def update_extension(extension_id: str, update_data: ExtensionUpdateSchema
         "success": False,
         "data": None,
         "message": "Can't find extension"
+    }
+
+
+async def search_by_name_or_extension(param: str):
+    extension = await ExtensionModel.find_one({"$or": [{"extension_id": param}, {"agent": param}]})
+    if extension:
+        return {
+            "success": True,
+            "data": extension.dump(),
+            "message": "Extension found"
+        }
+    return {
+        "success": False,
+        "data": None,
+        "message": "Can't find any extension"
     }
