@@ -26,11 +26,10 @@ async def create_extension(request_data: ExtensionSchema, payload: dict):
             "message": "Add new extension successfully"
         }
     except ValidationError as e:
-        print(e)
         return {
             "success": False,
             "data": None,
-            "message": "Extension already existed"
+            "message": str(e)
         }
 
 

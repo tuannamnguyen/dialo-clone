@@ -1,16 +1,16 @@
 from typing import Annotated
 
+import jwt
 from fastapi import APIRouter, Depends, Query
 
-from src.auth.auth_bearer import jwt_validator
+from src.auth.auth_bearer import (JWT_ALGORITHM, JWT_SECRET, jwt_validator,
+                                  oauth2_scheme)
 from src.routers.extension.utils import (create_extension, delete_extension,
                                          get_extensions,
                                          search_by_name_or_extension,
                                          update_extension)
 from src.schemas.extension_schema import ExtensionSchema, ExtensionUpdateSchema
-from src.schemas.response_model import APIResponse
-from src.auth.auth_bearer import oauth2_scheme, JWT_ALGORITHM, JWT_SECRET
-import jwt
+from src.schemas.response_schema import APIResponse
 
 extension_router = APIRouter(prefix="/extensions", tags=["Extensions"])
 

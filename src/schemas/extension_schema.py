@@ -6,7 +6,7 @@ class ExtensionSchema(BaseModel):
     agent: str | None = None
     status: str | None = None
     description: str | None = None
-    tenant: str | None = None
+    tenant: str
 
     @field_validator("extension_id")
     def id_must_contain_numbers_only(cls, v):
