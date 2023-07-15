@@ -3,12 +3,20 @@ from src.schemas.extension_schema import ExtensionSchema, ExtensionUpdateSchema
 from fastapi.encoders import jsonable_encoder
 from marshmallow.exceptions import ValidationError
 from pymongo.errors import DuplicateKeyError
-from src.routers.user.views import TENANT_ID
+import jwt
 
-async def create_extension(request_data: ExtensionSchema):
+async def create_extension(request_data: ExtensionSchema, token: str):
     try:
         await ExtensionModel.ensure_indexes()
         request_data = jsonable_encoder(request_data)
+        
+        if token.get("tenant_id") != request_data.get("tenant"):
+            return {
+            "success": False,
+            "data": None,
+            "message": "Different tenant. Operation failed"
+        }
+        
         await ExtensionModel(**request_data).commit()
         return {
             "success": True,

@@ -14,7 +14,7 @@ JWT_ALGORITHM = config("algorithm")
 
 # Connect to DB
 client = motor.motor_asyncio.AsyncIOMotorClient(DB_CONNECTION_STRING)
-db = client.demoapp
+db = client["dialo_clone"]
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 

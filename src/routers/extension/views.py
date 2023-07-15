@@ -9,13 +9,16 @@ from src.routers.extension.utils import (create_extension, delete_extension,
                                          update_extension)
 from src.schemas.extension_schema import ExtensionSchema, ExtensionUpdateSchema
 from src.schemas.response_model import APIResponse
+from src.auth.auth_bearer import oauth2_scheme, JWT_ALGORITHM, JWT_SECRET
+import jwt
 
 extension_router = APIRouter(prefix="/extensions", tags=["Extensions"])
 
 
 @extension_router.post("", dependencies=[Depends(jwt_validator)], response_model=APIResponse)
-async def create_new_extension(request_data: ExtensionSchema):
-    result = await create_extension(request_data)
+async def create_new_extension(request_data: ExtensionSchema, token: Annotated[str, Depends(oauth2_scheme)]):
+    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    result = await create_extension(request_data, payload)
     return result
 
 
