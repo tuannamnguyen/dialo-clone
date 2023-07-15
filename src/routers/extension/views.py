@@ -46,6 +46,7 @@ async def update_one_extension(extension_id: str, update_data: ExtensionUpdateSc
 
 
 @extension_router.get("/{extension_id_or_agent_name}", dependencies=[Depends(jwt_validator)], response_model=APIResponse)
-async def find_extension_by_id_or_agent_name(extension_id_or_agent_name: str):
-    result = await search_by_name_or_extension(extension_id_or_agent_name)
+async def find_extension_by_id_or_agent_name(extension_id_or_agent_name: str, token: Annotated[str, Depends(oauth2_scheme)]):
+    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    result = await search_by_name_or_extension(extension_id_or_agent_name, payload)
     return result

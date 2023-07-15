@@ -127,8 +127,13 @@ async def update_extension(extension_id: str, update_data: ExtensionUpdateSchema
     }
 
 
-async def search_by_name_or_extension(param: str):
-    extension = await ExtensionModel.find_one({"$or": [{"extension_id": param}, {"agent": param}]})
+async def search_by_name_or_extension(param: str, payload: dict):
+    tenant = payload.get("tenant_id")
+    extension = await ExtensionModel.find_one({
+        "$and": [{"tenant": tenant},
+                 {"$or": [{"extension_id": param}, {"agent": param}]
+                  }]
+    })
     if extension:
         return {
             "success": True,
