@@ -28,6 +28,7 @@ def authenticate_user(user_in_db: dict, password: str) -> bool:
 
 def create_access_token(data: dict, expires_delta: float | None = None):
     to_encode = {"fullname": data["fullname"],
+                 "tenant_id": data["tenant_id"],
                  "username": data["username"]}
     if expires_delta:
         expire = time.time() + expires_delta

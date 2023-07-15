@@ -3,7 +3,7 @@ from src.schemas.extension_schema import ExtensionSchema, ExtensionUpdateSchema
 from fastapi.encoders import jsonable_encoder
 from marshmallow.exceptions import ValidationError
 from pymongo.errors import DuplicateKeyError
-
+from src.routers.user.views import TENANT_ID
 
 async def create_extension(request_data: ExtensionSchema):
     try:
