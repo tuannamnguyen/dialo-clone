@@ -39,8 +39,9 @@ async def delete_one_extension(extension_id: str, token: Annotated[str, Depends(
 
 
 @extension_router.put("/{extension_id}", dependencies=[Depends(jwt_validator)], response_model=APIResponse)
-async def update_one_extension(extension_id: str, update_data: ExtensionUpdateSchema):
-    result = await update_extension(extension_id, update_data)
+async def update_one_extension(extension_id: str, update_data: ExtensionUpdateSchema, token: Annotated[str, Depends(oauth2_scheme)]):
+    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    result = await update_extension(extension_id, update_data, payload)
     return result
 
 

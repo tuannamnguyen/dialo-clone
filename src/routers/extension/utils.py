@@ -94,9 +94,16 @@ async def delete_extension(extension_id: str, payload: dict):
     }
 
 
-async def update_extension(extension_id: str, update_data: ExtensionUpdateSchema):
+async def update_extension(extension_id: str, update_data: ExtensionUpdateSchema, payload: dict):
+    tenant = payload.get("tenant_id")
     extension = await ExtensionModel.find_one({"extension_id": extension_id})
     if extension:
+        if extension.tenant != tenant:
+            return {
+                "success": False,
+                "data": None,
+                "message": "Different tenant. Operation failed"
+            }
         update_data = jsonable_encoder(update_data)
         update_data = {k: v for k, v in update_data.items() if v is not None}
         try:
