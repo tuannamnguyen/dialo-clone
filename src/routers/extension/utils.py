@@ -5,18 +5,19 @@ from marshmallow.exceptions import ValidationError
 from pymongo.errors import DuplicateKeyError
 import jwt
 
-async def create_extension(request_data: ExtensionSchema, token: str):
+
+async def create_extension(request_data: ExtensionSchema, payload: dict):
     try:
         await ExtensionModel.ensure_indexes()
         request_data = jsonable_encoder(request_data)
-        
-        if token.get("tenant_id") != request_data.get("tenant"):
+
+        if payload.get("tenant_id") != request_data.get("tenant"):
             return {
-            "success": False,
-            "data": None,
-            "message": "Different tenant. Operation failed"
-        }
-        
+                "success": False,
+                "data": None,
+                "message": "Different tenant. Operation failed"
+            }
+
         await ExtensionModel(**request_data).commit()
         return {
             "success": True,
@@ -32,23 +33,29 @@ async def create_extension(request_data: ExtensionSchema, token: str):
         }
 
 
-async def get_extensions(queue: list[str], status: str):
+async def get_extensions(queue: list[str], status: str, payload: dict):
+    tenant = payload.get("tenant_id")
     data = []
     if not queue and not status:
-        data = [extension.dump() async for extension in ExtensionModel.find()]
+        data = [extension.dump() async for extension in ExtensionModel.find({"tenant": tenant})]
     elif queue and not status:
-        data = [extension.dump() async for extension in ExtensionModel.find(
-            {"list_queue_id": {"$elemMatch": {"$in": queue}}}
-        )]
+        data = [extension.dump() async for extension in ExtensionModel.find({
+            "$and": [
+                {"tenant": tenant},
+                {"list_queue_id": {"$elemMatch": {"$in": queue}}}
+            ]
+        })]
     elif status and not queue:
-        data = [extension.dump() async for extension in ExtensionModel.find(
-            {"status": status}
-        )]
+        data = [extension.dump() async for extension in ExtensionModel.find({
+            "$and": [
+                {"status": status}, {"tenant": tenant}
+            ]
+        })]
     elif queue and status:
-        data = [extension.dump() async for extension in ExtensionModel.find(
-            {"$and": [{"list_queue_id": {"$elemMatch": {"$in": queue}}}, {
-                "status": status}]}
-        )]
+        data = [extension.dump() async for extension in ExtensionModel.find({
+            "$and": [{"list_queue_id": {"$elemMatch": {"$in": queue}}},
+                     {"status": status}]
+        })]
 
     if data:
         return {

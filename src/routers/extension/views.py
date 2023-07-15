@@ -23,9 +23,11 @@ async def create_new_extension(request_data: ExtensionSchema, token: Annotated[s
 
 
 @extension_router.get("", dependencies=[Depends(jwt_validator)], response_model=APIResponse)
-async def get_all_extensions(queue: Annotated[list[str], Query()] = [],
+async def get_all_extensions(token: Annotated[str, Depends(oauth2_scheme)],
+                             queue: Annotated[list[str], Query()] = [],
                              status: Annotated[str | None, Query(regex=r'\b(?:Enable|Disable)\b')] = None):
-    result = await get_extensions(queue, status)
+    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    result = await get_extensions(queue, status, payload)
     return result
 
 
