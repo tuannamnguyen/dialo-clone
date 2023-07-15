@@ -7,11 +7,12 @@ import jwt
 
 
 async def create_extension(request_data: ExtensionSchema, payload: dict):
+    tenant = payload.get("tenant_id")
     try:
         await ExtensionModel.ensure_indexes()
         request_data = jsonable_encoder(request_data)
 
-        if payload.get("tenant_id") != request_data.get("tenant"):
+        if tenant != request_data.get("tenant"):
             return {
                 "success": False,
                 "data": None,
@@ -70,9 +71,16 @@ async def get_extensions(queue: list[str], status: str, payload: dict):
     }
 
 
-async def delete_extension(extension_id: str):
+async def delete_extension(extension_id: str, payload: dict):
+    tenant = payload.get("tenant_id")
     extension = await ExtensionModel.find_one({"extension_id": extension_id})
     if extension:
+        if extension.tenant != tenant:
+            return {
+                "success": False,
+                "data": None,
+                "message": "Different tenant. Operation failed"
+            }
         await ExtensionModel.collection.delete_one({"extension_id": extension_id})
         return {
             "success": True,

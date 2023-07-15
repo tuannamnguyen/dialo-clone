@@ -32,8 +32,9 @@ async def get_all_extensions(token: Annotated[str, Depends(oauth2_scheme)],
 
 
 @extension_router.delete("/{extension_id}", dependencies=[Depends(jwt_validator)], response_model=APIResponse)
-async def delete_one_extension(extension_id: str):
-    result = await delete_extension(extension_id)
+async def delete_one_extension(extension_id: str, token: Annotated[str, Depends(oauth2_scheme)]):
+    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    result = await delete_extension(extension_id, payload)
     return result
 
 
