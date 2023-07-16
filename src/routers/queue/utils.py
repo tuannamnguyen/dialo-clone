@@ -2,6 +2,7 @@ from fastapi.encoders import jsonable_encoder
 from marshmallow.exceptions import ValidationError
 from pymongo.errors import DuplicateKeyError
 
+from src.models.extension_model import ExtensionModel
 from src.models.queue_model import QueueModel
 from src.schemas.queue_schema import QueueSchema, QueueUpdateSchema
 
@@ -13,13 +14,26 @@ async def create_queue(request_data: QueueSchema, payload: dict):
     try:
         await QueueModel.ensure_indexes()
         request_data = jsonable_encoder(request_data)
+
         if tenant != request_data.get("tenant"):
             return {
                 "success": False,
                 "data": None,
                 "message": TENANT_ERROR
             }
-        await QueueModel(**request_data).commit()
+
+        queue_model = QueueModel(**request_data)
+        list_extension_id = queue_model.list_extension_id
+        if list_extension_id:
+            # ensure list_extension_id does not have duplicate values
+            list_extension_id = list(set(list_extension_id))
+            # for each extension in list_extension_id, append queue_id to list_queue_id
+            ExtensionModel.collection.update_many(
+                {"extension_id": {"$in": list_extension_id}},
+                {"$push": {"list_queue_id": queue_model.queue_id}}
+            )
+
+        await queue_model.commit()
         return {
             "success": True,
             "data": request_data,
@@ -62,6 +76,15 @@ async def delete_queue(queue_id: str, payload: dict):
                 "data": None,
                 "message": TENANT_ERROR
             }
+        list_extension_id = queue.list_extension_id
+        if list_extension_id:
+            # ensure list_queue_id does not have duplicate values
+            list_extension_id = list(set(list_extension_id))
+            # for each extension in list_extension_id, delete queue_id from list_queue_id
+            ExtensionModel.collection.update_many(
+                {"extension_id": {"$in": list_extension_id}},
+                {"$pull": {"list_queue_id": queue_id}}
+            )
         await QueueModel.collection.delete_one({"queue_id": queue_id})
         return {
             "success": True,
@@ -88,6 +111,26 @@ async def update_queue(queue_id: str, update_data: QueueUpdateSchema, payload: d
         update_data = jsonable_encoder(update_data)
         update_data = {k: v for k, v in update_data.items() if v is not None}
         try:
+            if update_data["list_extension_id"]:
+                # ensure list_extension_id does not have duplicate values
+                update_data["list_extension_id"] = list(
+                    set(update_data["list_extension_id"]))
+                new_list_extension_id = update_data["list_extension_id"]
+                old_list_extension_id = queue.list_extension_id
+
+                # 1. For each extension in old list_extension_id, delete queue from list_queue_id
+                if old_list_extension_id:
+                    old_list_extension_id = list(set(old_list_extension_id))
+                    ExtensionModel.collection.update_many(
+                        {"extension_id": {"$in": old_list_extension_id}},
+                        {"$pull": {"list_queue_id": queue_id}}
+                    )
+                # 2. For each extension in new list_extension_id, add queue to list_queue_id
+                ExtensionModel.collection.update_many(
+                    {"extension_id": {"$in": new_list_extension_id}},
+                    {"$push": {"list_queue_id": queue_id}}
+                )
+                
             await QueueModel.collection.update_one({"queue_id": queue_id}, {"$set": update_data})
             return {
                 "success": True,
