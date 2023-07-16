@@ -26,7 +26,7 @@ class ExtensionSchema(BaseModel):
     def queue_must_exist(cls, v):
         if len(v) == 0:
             raise ValueError("Queue list must not be empty")
-        if len(v) != QueueModel.count_documents({"queue_id": {"$in": v}}):
+        if len(list(set(v))) != QueueModel.count_documents({"queue_id": {"$in": v}}):
             raise ValueError("One or more queues does not exist")
 
 class ExtensionUpdateSchema(BaseModel):

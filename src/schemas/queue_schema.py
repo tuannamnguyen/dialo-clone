@@ -12,7 +12,7 @@ class QueueSchema(BaseModel):
     def extension_must_exist(cls, v):
         if len(v) == 0:
             raise ValueError("Extension list must not be empty")
-        if len(v) != ExtensionModel.count_documents({"extension_id": {"$in": v}}):
+        if len(list(set(v))) != ExtensionModel.count_documents({"extension_id": {"$in": v}}):
             raise ValueError("One or more extensions does not exist")
 
 

@@ -3,6 +3,7 @@ from marshmallow.exceptions import ValidationError
 from pymongo.errors import DuplicateKeyError
 
 from src.models.extension_model import ExtensionModel
+from src.models.queue_model import QueueModel
 from src.schemas.extension_schema import ExtensionSchema, ExtensionUpdateSchema
 
 TENANT_ERROR = "Different tenant. Operation failed"
@@ -21,7 +22,18 @@ async def create_extension(request_data: ExtensionSchema, payload: dict):
                 "message": TENANT_ERROR
             }
 
-        await ExtensionModel(**request_data).commit()
+        extension_model = ExtensionModel(**request_data)
+        list_queue_id = extension_model.list_queue_id
+        if list_queue_id:
+            # ensure list_queue_id does not have duplicate values
+            list_queue_id = list(set(list_queue_id))
+            # for each queue in list_queue_id, append extension_id to list_extension_id
+            QueueModel.collection.update_many(
+                {"queue_id": {"$in": list_queue_id}},
+                {"$push": {"list_extension_id": extension_model.extension_id}}
+            )
+
+        await extension_model.commit()
         return {
             "success": True,
             "data": request_data,
@@ -82,6 +94,15 @@ async def delete_extension(extension_id: str, payload: dict):
                 "data": None,
                 "message": TENANT_ERROR
             }
+        list_queue_id = extension.list_queue_id
+        if list_queue_id:
+            # ensure list_queue_id does not have duplicate values
+            list_queue_id = list(set(list_queue_id))
+            # for each queue in list_queue_id, delete extension_id from list_extension_id
+            QueueModel.collection.update_many(
+                {"queue_id": {"$in": list_queue_id}},
+                {"$pull": {"list_extension_id": extension_id}}
+            )
         await ExtensionModel.collection.delete_one({"extension_id": extension_id})
         return {
             "success": True,
