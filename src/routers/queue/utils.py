@@ -7,6 +7,7 @@ from src.schemas.queue_schema import QueueSchema, QueueUpdateSchema
 
 TENANT_ERROR = "Different tenant. Operation failed"
 
+
 async def create_queue(request_data: QueueSchema, payload: dict):
     tenant = payload.get("tenant_id")
     try:
@@ -73,6 +74,7 @@ async def delete_queue(queue_id: str, payload: dict):
         "message": "Can't find queue"
     }
 
+
 async def update_queue(queue_id: str, update_data: QueueUpdateSchema, payload: dict):
     tenant = payload.get("tenant_id")
     queue = await QueueModel.find_one({"queue_id": queue_id})
@@ -100,3 +102,27 @@ async def update_queue(queue_id: str, update_data: QueueUpdateSchema, payload: d
                 "message": str(e)
             }
 
+
+async def search_by_id_or_extension(param: str, payload: dict):
+    tenant = payload.get("tenant_id")
+    queue = await QueueModel.find_one({
+        "$and": [
+            {"tenant": tenant},
+            {"$or": [
+                {"queue_id": param},
+                {"list_extension_id": param}
+            ]}
+        ]
+    })
+
+    if queue:
+        return {
+            "success": True,
+            "data": queue.dump(),
+            "message": "Queue found"
+        }
+    return {
+        "success": False,
+        "data": None,
+        "message": "Can't find queue"
+    }
