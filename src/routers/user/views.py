@@ -9,6 +9,7 @@ from src.auth.auth_handler import (authenticate_user, create_access_token,
                                    get_password_hash)
 from src.models.user_model import User
 from src.schemas.user_schema import UserSchema
+from marshmallow.exceptions import ValidationError
 
 user_router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -20,13 +21,16 @@ async def get_all_users():
 
 @user_router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def user_signup(user: UserSchema):
-    user = jsonable_encoder(user)
-    new_user_model = User(**user)
-    # Insert hashed password into DB
-    new_user_model.password = get_password_hash(user["password"])
-    await User.ensure_indexes()
-    await new_user_model.commit()
-    return new_user_model.dump()
+    try:
+        user = jsonable_encoder(user)
+        new_user_model = User(**user)
+        # Insert hashed password into DB
+        new_user_model.password = get_password_hash(user["password"])
+        await User.ensure_indexes()
+        await new_user_model.commit()
+        return new_user_model.dump()
+    except ValidationError as e:
+        return str(e)
 
 
 @user_router.post("/login", status_code=status.HTTP_200_OK)
