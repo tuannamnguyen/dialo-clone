@@ -24,8 +24,8 @@ async def create_extension(request_data: ExtensionSchema, payload: dict):
 
         extension_model = ExtensionModel(**request_data)
         list_queue_id = extension_model.list_queue_id
-        # check if list_queue_id is None
-        if list_queue_id:
+
+        if list_queue_id:  # check if list_queue_id is not empty
             # ensure list_queue_id does not have duplicate values
             list_queue_id = list(set(list_queue_id))
 
@@ -105,7 +105,7 @@ async def delete_extension(extension_id: str, payload: dict):
                 "message": TENANT_ERROR
             }
         list_queue_id = extension.list_queue_id
-        # check if list_queue_id is None
+        # check if list_queue_id is not empty
         if list_queue_id:
             # ensure list_queue_id does not have duplicate values
             list_queue_id = list(set(list_queue_id))
@@ -142,7 +142,7 @@ async def update_extension(extension_id: str, update_data: ExtensionUpdateSchema
         update_data = jsonable_encoder(update_data)
         update_data = {k: v for k, v in update_data.items() if v is not None}
         try:
-            if update_data["list_queue_id"]:
+            if update_data["list_queue_id"]:  # check if list_queue_id is not empty
                 # ensure list_queue_id does not have duplicate values
                 update_data["list_queue_id"] = list(
                     set(update_data["list_queue_id"]))
@@ -150,7 +150,7 @@ async def update_extension(extension_id: str, update_data: ExtensionUpdateSchema
                 old_list_queue_id = extension.list_queue_id
 
                 # 1. For each queue in old list_queue_id, delete extension from list_extension_id
-                if old_list_queue_id:
+                if old_list_queue_id:  # check if old list_queue_id is not empty
                     old_list_queue_id = list(set(old_list_queue_id))
                     QueueModel.collection.update_many(
                         {"queue_id": {"$in": old_list_queue_id}},

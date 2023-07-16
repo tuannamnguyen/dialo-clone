@@ -2,7 +2,7 @@ from pydantic import BaseModel, field_validator, ValidationError
 
 class ExtensionSchema(BaseModel):
     extension_id: str
-    list_queue_id: list[str] | None = None
+    list_queue_id: list[str] = []
     agent: str | None = None
     status: str | None = None
     description: str | None = None
@@ -19,17 +19,10 @@ class ExtensionSchema(BaseModel):
         if v != "Enable" and v != "Disable" and v is not None:
             raise ValueError("Invalid status")
         return v
-    
-    @field_validator("list_queue_id")
-    # TODO: test
-    def queue_must_exist(cls, v):
-        if v and len(v) == 0:
-            raise ValueError("Queue list must not be empty")
-        return v
 
 class ExtensionUpdateSchema(BaseModel):
     extension_id: None = None
-    list_queue_id: list[str] | None = None
+    list_queue_id: list[str] = []
     agent: str | None = None
     status: str | None = None
     description: str | None = None
@@ -39,13 +32,6 @@ class ExtensionUpdateSchema(BaseModel):
     def must_have_valid_status(cls, v):
         if v != "Enable" and v != "Disable" and v is not None:
             raise ValueError("Invalid status")
-        return v
-    
-    @field_validator("list_queue_id")
-    # TODO: test
-    def queue_must_exist(cls, v):
-        if v and len(v) == 0:
-            raise ValueError("Queue list must not be empty")
         return v
 
 
