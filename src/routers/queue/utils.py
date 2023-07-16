@@ -5,7 +5,7 @@ from fastapi.encoders import jsonable_encoder
 
 
 async def create_queue(request_data: QueueSchema, payload: dict):
-    tenant = payload.get("tenant_id") 
+    tenant = payload.get("tenant_id")
     try:
         await QueueModel.ensure_indexes()
         request_data = jsonable_encoder(request_data)
@@ -30,11 +30,12 @@ async def create_queue(request_data: QueueSchema, payload: dict):
             "message": str(e)
         }
 
+
 async def get_queue(payload: dict):
     tenant = payload.get("tenant_id")
     data = [queue.dump() async for queue in QueueModel.find({"tenant": tenant})]
 
-    if data: 
+    if data:
         return {
             "success": True,
             "data": data,
@@ -46,3 +47,25 @@ async def get_queue(payload: dict):
         "message": "Can't find any queue"
     }
 
+
+async def delete_queue(queue_id: str, payload: dict):
+    tenant = payload.get("tenant_id")
+    queue = await QueueModel.find_one({"queue_id": queue_id})
+    if queue:
+        if queue.tenant != tenant:
+            return {
+                "success": False,
+                "data": None,
+                "message": "Different tenant. Operation failed"
+            }
+        await QueueModel.collection.delete_one({"queue_id": queue_id})
+        return {
+            "success": True,
+            "data": queue.dump(),
+            "message": "Delete queue successfully"
+        }
+    return {
+        "success": False,
+        "data": None,
+        "message": "Can't find queue"
+    }
