@@ -27,6 +27,15 @@ async def create_queue(request_data: QueueSchema, payload: dict):
         if list_extension_id:
             # ensure list_extension_id does not have duplicate values
             list_extension_id = list(set(list_extension_id))
+
+            # ensure that each extension in list_extension_id exists
+            if len(list_extension_id) != await ExtensionModel.count_documents({"extension_id": {"$in": list_extension_id}}):
+                return {
+                    "success": False,
+                    "data": None,
+                    "message": "One or more extensions does not exist"
+                }
+
             # for each extension in list_extension_id, append queue_id to list_queue_id
             ExtensionModel.collection.update_many(
                 {"extension_id": {"$in": list_extension_id}},
@@ -80,11 +89,13 @@ async def delete_queue(queue_id: str, payload: dict):
         if list_extension_id:
             # ensure list_queue_id does not have duplicate values
             list_extension_id = list(set(list_extension_id))
+            
             # for each extension in list_extension_id, delete queue_id from list_queue_id
             ExtensionModel.collection.update_many(
                 {"extension_id": {"$in": list_extension_id}},
                 {"$pull": {"list_queue_id": queue_id}}
             )
+
         await QueueModel.collection.delete_one({"queue_id": queue_id})
         return {
             "success": True,
@@ -125,6 +136,15 @@ async def update_queue(queue_id: str, update_data: QueueUpdateSchema, payload: d
                         {"extension_id": {"$in": old_list_extension_id}},
                         {"$pull": {"list_queue_id": queue_id}}
                     )
+
+                # ensure that each extension in new_list_extension_id exists
+                if len(new_list_extension_id) != await ExtensionModel.count_documents({"extension_id": {"$in": new_list_extension_id}}):
+                    return {
+                        "success": False,
+                        "data": None,
+                        "message": "One or more extensions does not exist"
+                    }
+
                 # 2. For each extension in new list_extension_id, add queue to list_queue_id
                 ExtensionModel.collection.update_many(
                     {"extension_id": {"$in": new_list_extension_id}},

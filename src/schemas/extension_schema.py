@@ -1,5 +1,4 @@
 from pydantic import BaseModel, field_validator, ValidationError
-from src.models.queue_model import QueueModel
 
 class ExtensionSchema(BaseModel):
     extension_id: str
@@ -24,10 +23,9 @@ class ExtensionSchema(BaseModel):
     @field_validator("list_queue_id")
     # TODO: test
     def queue_must_exist(cls, v):
-        if len(v) == 0:
+        if v and len(v) == 0:
             raise ValueError("Queue list must not be empty")
-        if len(list(set(v))) != QueueModel.count_documents({"queue_id": {"$in": v}}):
-            raise ValueError("One or more queues does not exist")
+        return v
 
 class ExtensionUpdateSchema(BaseModel):
     extension_id: None = None
@@ -46,17 +44,16 @@ class ExtensionUpdateSchema(BaseModel):
     @field_validator("list_queue_id")
     # TODO: test
     def queue_must_exist(cls, v):
-        if len(v) == 0:
+        if v and len(v) == 0:
             raise ValueError("Queue list must not be empty")
-        if len(v) != QueueModel.count_documents({"queue_id": {"$in": v}}):
-            raise ValueError("One or more queue does not exist")
+        return v
 
 
 if __name__ == "__main__":
     try:
-        print(ExtensionSchema(extension_id="1123", list_queue_id=[], agent="namnt134", status="Enable", description=None))
-        print(ExtensionSchema(extension_id="1123", list_queue_id=[], agent="namnt134", status="Enable", description=None).model_dump_json())
-        print(ExtensionUpdateSchema(list_queue_id=[], agent="namnt134", status=None, description=None, tenant="5"))
+        print(ExtensionSchema(extension_id="1123", list_queue_id=["qfqwdqwdqwdqwdqwd"], agent="namnt134", status="Enable", description=None, tenant="5"))
+        print(ExtensionSchema(extension_id="1123", list_queue_id=None, agent="namnt134", status="Enable", description=None, tenant="5").model_dump_json())
+        print(ExtensionUpdateSchema(list_queue_id=None, agent="namnt134", status=None, description=None, tenant=None))
         
 
     except ValidationError as e:
