@@ -129,6 +129,25 @@ async def update_extension(extension_id: str, update_data: ExtensionUpdateSchema
         update_data = jsonable_encoder(update_data)
         update_data = {k: v for k, v in update_data.items() if v is not None}
         try:
+            if update_data["list_queue_id"]:
+                # ensure list_queue_id does not have duplicate values
+                update_data["list_queue_id"] = list(
+                    set(update_data["list_queue_id"]))
+                new_list_queue_id = update_data["list_queue_id"]
+                old_list_queue_id = extension.list_queue_id
+
+                # 1. For each queue in old list_queue_id, delete extension from list_extension_id
+                if old_list_queue_id:
+                    old_list_queue_id = list(set(old_list_queue_id))
+                    QueueModel.collection.update_many(
+                        {"queue_id": {"$in": old_list_queue_id}},
+                        {"$pull": {"list_extension_id": extension_id}}
+                    )
+                # 2. For each queue in new list_queue_id, add extension to list_extension_id
+                QueueModel.collection.update_many(
+                {"queue_id": {"$in": new_list_queue_id}},
+                {"$push": {"list_extension_id": extension_id}}
+            )
             await ExtensionModel.collection.update_one({"extension_id": extension_id}, {"$set": update_data})
             return {
                 "success": True,
