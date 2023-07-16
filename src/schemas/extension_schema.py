@@ -1,4 +1,5 @@
 from pydantic import BaseModel, field_validator, ValidationError
+from src.models.queue_model import QueueModel
 
 class ExtensionSchema(BaseModel):
     extension_id: str
@@ -19,6 +20,14 @@ class ExtensionSchema(BaseModel):
         if v != "Enable" and v != "Disable" and v is not None:
             raise ValueError("Invalid status")
         return v
+    
+    @field_validator("list_queue_id")
+    # TODO: test
+    def queue_must_exist(cls, v):
+        if len(v) == 0:
+            raise ValueError("Queue list must not be empty")
+        if len(v) != QueueModel.count_documents({"queue_id": {"$in": v}}):
+            raise ValueError("One or more queues does not exist")
 
 class ExtensionUpdateSchema(BaseModel):
     extension_id: None = None
@@ -33,6 +42,14 @@ class ExtensionUpdateSchema(BaseModel):
         if v != "Enable" and v != "Disable" and v is not None:
             raise ValueError("Invalid status")
         return v
+    
+    @field_validator("list_queue_id")
+    # TODO: test
+    def queue_must_exist(cls, v):
+        if len(v) == 0:
+            raise ValueError("Queue list must not be empty")
+        if len(v) != QueueModel.count_documents({"queue_id": {"$in": v}}):
+            raise ValueError("One or more queue does not exist")
 
 
 if __name__ == "__main__":
