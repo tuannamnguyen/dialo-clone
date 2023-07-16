@@ -1,9 +1,11 @@
-from src.models.extension_model import ExtensionModel
-from src.schemas.extension_schema import ExtensionSchema, ExtensionUpdateSchema
 from fastapi.encoders import jsonable_encoder
 from marshmallow.exceptions import ValidationError
 from pymongo.errors import DuplicateKeyError
-import jwt
+
+from src.models.extension_model import ExtensionModel
+from src.schemas.extension_schema import ExtensionSchema, ExtensionUpdateSchema
+
+TENANT_ERROR = "Different tenant. Operation failed"
 
 
 async def create_extension(request_data: ExtensionSchema, payload: dict):
@@ -16,7 +18,7 @@ async def create_extension(request_data: ExtensionSchema, payload: dict):
             return {
                 "success": False,
                 "data": None,
-                "message": "Different tenant. Operation failed"
+                "message": TENANT_ERROR
             }
 
         await ExtensionModel(**request_data).commit()
@@ -78,7 +80,7 @@ async def delete_extension(extension_id: str, payload: dict):
             return {
                 "success": False,
                 "data": None,
-                "message": "Different tenant. Operation failed"
+                "message": TENANT_ERROR
             }
         await ExtensionModel.collection.delete_one({"extension_id": extension_id})
         return {
@@ -101,7 +103,7 @@ async def update_extension(extension_id: str, update_data: ExtensionUpdateSchema
             return {
                 "success": False,
                 "data": None,
-                "message": "Different tenant. Operation failed"
+                "message": TENANT_ERROR
             }
         update_data = jsonable_encoder(update_data)
         update_data = {k: v for k, v in update_data.items() if v is not None}
@@ -117,7 +119,7 @@ async def update_extension(extension_id: str, update_data: ExtensionUpdateSchema
             return {
                 "success": False,
                 "data": None,
-                "message": "Duplicate agent or extension ID"
+                "message": str(e)
             }
     return {
         "success": False,
