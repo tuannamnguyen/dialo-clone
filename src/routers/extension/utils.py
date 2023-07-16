@@ -3,6 +3,7 @@ from marshmallow.exceptions import ValidationError
 from pymongo.errors import DuplicateKeyError
 
 from src.models.extension_model import ExtensionModel
+from src.models.queue_model import QueueModel
 from src.schemas.extension_schema import ExtensionSchema, ExtensionUpdateSchema
 
 TENANT_ERROR = "Different tenant. Operation failed"
@@ -21,7 +22,28 @@ async def create_extension(request_data: ExtensionSchema, payload: dict):
                 "message": TENANT_ERROR
             }
 
-        await ExtensionModel(**request_data).commit()
+        extension_model = ExtensionModel(**request_data)
+        list_queue_id = extension_model.list_queue_id
+
+        if list_queue_id:  # check if list_queue_id is not empty
+            # ensure list_queue_id does not have duplicate values
+            list_queue_id = list(set(list_queue_id))
+
+            # ensure that each queue in list_queue_id exists
+            if len(list_queue_id) != await QueueModel.count_documents({"queue_id": {"$in": list_queue_id}}):
+                return {
+                    "success": False,
+                    "data": None,
+                    "message": "One or more queues does not exist"
+                }
+
+            # for each queue in list_queue_id, append extension_id to list_extension_id
+            QueueModel.collection.update_many(
+                {"queue_id": {"$in": list_queue_id}},
+                {"$push": {"list_extension_id": extension_model.extension_id}}
+            )
+
+        await extension_model.commit()
         return {
             "success": True,
             "data": request_data,
@@ -82,6 +104,18 @@ async def delete_extension(extension_id: str, payload: dict):
                 "data": None,
                 "message": TENANT_ERROR
             }
+        list_queue_id = extension.list_queue_id
+        # check if list_queue_id is not empty
+        if list_queue_id:
+            # ensure list_queue_id does not have duplicate values
+            list_queue_id = list(set(list_queue_id))
+
+            # for each queue in list_queue_id, delete extension_id from list_extension_id
+            QueueModel.collection.update_many(
+                {"queue_id": {"$in": list_queue_id}},
+                {"$pull": {"list_extension_id": extension_id}}
+            )
+
         await ExtensionModel.collection.delete_one({"extension_id": extension_id})
         return {
             "success": True,
@@ -108,6 +142,34 @@ async def update_extension(extension_id: str, update_data: ExtensionUpdateSchema
         update_data = jsonable_encoder(update_data)
         update_data = {k: v for k, v in update_data.items() if v is not None}
         try:
+            if update_data["list_queue_id"]:  # check if list_queue_id is not empty
+                # ensure list_queue_id does not have duplicate values
+                update_data["list_queue_id"] = list(
+                    set(update_data["list_queue_id"]))
+                new_list_queue_id = update_data["list_queue_id"]
+                old_list_queue_id = extension.list_queue_id
+
+                # 1. For each queue in old list_queue_id, delete extension from list_extension_id
+                if old_list_queue_id:  # check if old list_queue_id is not empty
+                    old_list_queue_id = list(set(old_list_queue_id))
+                    QueueModel.collection.update_many(
+                        {"queue_id": {"$in": old_list_queue_id}},
+                        {"$pull": {"list_extension_id": extension_id}}
+                    )
+
+                # 2.  ensure that each queue in new_list_queue_id exists
+                if len(new_list_queue_id) != await QueueModel.count_documents({"queue_id": {"$in": new_list_queue_id}}):
+                    return {
+                        "success": False,
+                        "data": None,
+                        "message": "One or more queues does not exist"
+                    }
+
+                # 3. For each queue in new list_queue_id, add extension to list_extension_id
+                QueueModel.collection.update_many(
+                    {"queue_id": {"$in": new_list_queue_id}},
+                    {"$push": {"list_extension_id": extension_id}}
+                )
             await ExtensionModel.collection.update_one({"extension_id": extension_id}, {"$set": update_data})
             return {
                 "success": True,

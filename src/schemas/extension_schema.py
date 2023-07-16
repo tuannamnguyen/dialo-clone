@@ -1,9 +1,8 @@
 from pydantic import BaseModel, field_validator, ValidationError
-from src.models.queue_model import QueueModel
 
 class ExtensionSchema(BaseModel):
     extension_id: str
-    list_queue_id: list[str] | None = None
+    list_queue_id: list[str] = []
     agent: str | None = None
     status: str | None = None
     description: str | None = None
@@ -20,18 +19,10 @@ class ExtensionSchema(BaseModel):
         if v != "Enable" and v != "Disable" and v is not None:
             raise ValueError("Invalid status")
         return v
-    
-    @field_validator("list_queue_id")
-    # TODO: test
-    def queue_must_exist(cls, v):
-        if len(v) == 0:
-            raise ValueError("Queue list must not be empty")
-        if len(v) != QueueModel.count_documents({"queue_id": {"$in": v}}):
-            raise ValueError("One or more queues does not exist")
 
 class ExtensionUpdateSchema(BaseModel):
     extension_id: None = None
-    list_queue_id: list[str] | None = None
+    list_queue_id: list[str] = []
     agent: str | None = None
     status: str | None = None
     description: str | None = None
@@ -42,21 +33,13 @@ class ExtensionUpdateSchema(BaseModel):
         if v != "Enable" and v != "Disable" and v is not None:
             raise ValueError("Invalid status")
         return v
-    
-    @field_validator("list_queue_id")
-    # TODO: test
-    def queue_must_exist(cls, v):
-        if len(v) == 0:
-            raise ValueError("Queue list must not be empty")
-        if len(v) != QueueModel.count_documents({"queue_id": {"$in": v}}):
-            raise ValueError("One or more queue does not exist")
 
 
 if __name__ == "__main__":
     try:
-        print(ExtensionSchema(extension_id="1123", list_queue_id=[], agent="namnt134", status="Enable", description=None))
-        print(ExtensionSchema(extension_id="1123", list_queue_id=[], agent="namnt134", status="Enable", description=None).model_dump_json())
-        print(ExtensionUpdateSchema(list_queue_id=[], agent="namnt134", status=None, description=None, tenant="5"))
+        print(ExtensionSchema(extension_id="1123", list_queue_id=["qfqwdqwdqwdqwdqwd"], agent="namnt134", status="Enable", description=None, tenant="5"))
+        print(ExtensionSchema(extension_id="1123", list_queue_id=None, agent="namnt134", status="Enable", description=None, tenant="5").model_dump_json())
+        print(ExtensionUpdateSchema(list_queue_id=None, agent="namnt134", status=None, description=None, tenant=None))
         
 
     except ValidationError as e:
