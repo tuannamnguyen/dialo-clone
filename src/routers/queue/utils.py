@@ -29,3 +29,20 @@ async def create_queue(request_data: QueueSchema, payload: dict):
             "data": None,
             "message": str(e)
         }
+
+async def get_queue(payload: dict):
+    tenant = payload.get("tenant_id")
+    data = [queue.dump() async for queue in QueueModel.find({"tenant": tenant})]
+
+    if data: 
+        return {
+            "success": True,
+            "data": data,
+            "message": "Get queues successfully"
+        }
+    return {
+        "success": False,
+        "data": None,
+        "message": "Can't find any queue"
+    }
+
