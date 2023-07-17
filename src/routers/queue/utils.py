@@ -164,7 +164,11 @@ async def update_queue(queue_id: str, update_data: QueueUpdateSchema, payload: d
                 "data": None,
                 "message": str(e)
             }
-
+    return {
+        "success": False,
+        "data": None,
+        "message": "Can't find extension"
+    }
 
 async def search_by_id_or_extension(param: str, payload: dict):
     tenant = payload.get("tenant_id")
