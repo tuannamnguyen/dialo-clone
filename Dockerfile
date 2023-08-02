@@ -6,6 +6,8 @@ COPY ./pyproject.toml ./poetry.lock /code/
 
 RUN pip install --no-cache-dir poetry && poetry config virtualenvs.in-project true && poetry install
 
-COPY ./ /code/
+COPY ./src /code/src
 
-CMD ["python", "run.py"]
+CMD ["poetry", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000" ]
+
+EXPOSE 8000
